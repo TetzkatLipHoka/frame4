@@ -29,28 +29,23 @@ unsigned short kget_firmware_from_base(uint64_t kernbase) {
         cached_firmware = 505;
         return 505;
     }
-
-    if (streq(fw0672, firmwareString)) {
+    else if (streq(fw0672, firmwareString)) {
         cached_firmware = 672;
         return 672;
     }
-
-    if (streq(fw0702, firmwareString)) {
+    else if (streq(fw0702, firmwareString)) {
         cached_firmware = 702;
         return 702;
     }
-
-    if (streq(fw0900, firmwareString)) {
+    else if (streq(fw0900, firmwareString)) {
         cached_firmware = 900;
         return 900;
     }
-
-    if (streq(fw1100, firmwareString)) {
+    else if (streq(fw1100, firmwareString)) {
         cached_firmware = 1100;
         return 1100;
     }
-
-    if (streq(fw1202, firmwareString)) {
+    else if (streq(fw1202, firmwareString)) {
         cached_firmware = 1202;
         return 1202;
     }

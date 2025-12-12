@@ -19,9 +19,7 @@ int sys_proc_list(struct thread *td, struct sys_proc_list_args *uap) {
 
     struct proc *p;
     int num;
-    int r;
-
-    r = 0;
+    int r = 0;
 
     if (!uap->num) {
         r = 1;
@@ -60,9 +58,7 @@ finish:
 
 int sys_proc_rw(struct thread *td, struct sys_proc_rw_args *uap) {
     struct proc *p;
-    int r;
-
-    r = 1;
+    int r = 1;
 
     p = proc_find_by_pid(uap->pid);
     if (p) {
@@ -94,12 +90,9 @@ int sys_proc_protect_handle(struct proc *p, struct sys_proc_protect_args *args) 
 }
 
 int sys_proc_vm_map_handle(struct proc *p, struct sys_proc_vm_map_args *args) {
-    struct vmspace *vm;
-    struct vm_map *map;
     struct vm_map_entry *entry;
-
-    vm = p->p_vmspace;
-    map = &vm->vm_map;
+    struct vmspace *vm = p->p_vmspace;
+    struct vm_map *map = &vm->vm_map;
 
     vm_map_lock_read(map);
 
@@ -439,12 +432,9 @@ int sys_console_cmd(struct thread *td, struct sys_console_cmd_args *uap) {
 }
 
 int sys_kern_vm_map_handle(struct sys_kern_vm_map_args *args) {
-    struct vmspace *vm;
-    struct vm_map *map;
     struct vm_map_entry *entry;
-
-    vm = *(struct vmspace **)kernel_map;
-    map = &vm->vm_map;
+    struct vmspace *vm = *(struct vmspace **)kernel_map;
+    struct vm_map *map = &vm->vm_map;
 
     vm_map_lock_read(map);
 
@@ -603,7 +593,7 @@ __attribute__((naked)) void md_display_dump_hook() {
                 "shl rdx, 32 \n"
                 "or rax, rdx \n"
                 "sub rax, 0x1C0 \n"
-                "add rax, 0x236132 \n" // jump back addr 
+                "add rax, 0x236132 \n" // jump back addr
                 "jmp rax \n"
             );
             break;
