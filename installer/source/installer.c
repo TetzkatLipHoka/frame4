@@ -253,6 +253,9 @@ void patch_900(uint64_t kernbase) {
 
     // patch sys_virtual_query check for pages flagged as system
     memcpy((void *)(kernbase + 0x1686F0), "\xE9\x81\x00\x00\x00", 5);
+
+    // patch for panic %lx bytes 2MB page is reserved, but used %#lx bytes
+    memcpy((void *)(kernbase + 0x15659F), "\xE9\x53\x02\x00\x00", 5);
 }
 
 void patch_1100(uint64_t kernbase) {
