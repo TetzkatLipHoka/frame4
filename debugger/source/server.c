@@ -304,7 +304,7 @@ int handle_socket_client(struct server_client *svc) {
             // time the handler sleeps in between packets
             // tested with 1ms but gave inconsistency
             // if this causes issue on wifi set it higher
-            sceKernelUsleep(2000); // was 25000
+            sceKernelUsleep(10); // was 25000
             continue;
         }
 
