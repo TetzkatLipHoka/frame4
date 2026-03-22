@@ -109,7 +109,7 @@ int sys_proc_vm_map_handle(struct proc *p, struct sys_proc_vm_map_args *args) {
             args->maps[i].prot = entry->prot & (entry->prot >> 8);
 
             memcpy(args->maps[i].name, entry->name, sizeof(args->maps[i].name));
-
+            
             entry = entry->next;
         }
     }
@@ -581,7 +581,22 @@ __attribute__((naked)) void md_display_dump_hook() {
 
     // get kernel base, calculate jump back address and jump
     // this is a mess, really need proper detours for this
-    switch (cached_firmware) {
+    /*
+      AOB Return Target: 48 8B 5D C8 4C 89 F7 4C 89 FE
+
+      0000000000315EB1 488D15F8EE4C00 lea rdx, [rip+0x4CEEF8]
+      0000000000315EB8 31FF           xor edi, edi
+      0000000000315EBA 31F6           xor esi, esi
+      0000000000315EBC 31C0           xor eax, eax
+      0000000000315EBE E82D3B4500     call 0x00000000007699F0
+    ->0000000000315EC3 488B5DC8       mov rbx, [rbp-0x38]
+      0000000000315EC7 4C89F7         mov rdi, r14
+      0000000000315ECA 4C89FE         mov rsi, r15
+      0000000000315ECD 31D2           xor edx, edx
+      0000000000315ECF E85C44E4FF     call 0x000000000015A330
+      0000000000315ED4 BA08000000     mov edx, 8
+    */
+    switch (cached_firmware) {      
         case 505:
             __asm__ volatile (
                 "mov ecx, 0xC0000082 \n"
@@ -626,7 +641,7 @@ __attribute__((naked)) void md_display_dump_hook() {
                 "jmp rax \n"
             );
             break;
-        case 1100:
+            case 1100:
             __asm__ volatile (
                 "mov ecx, 0xC0000082 \n"
                 "rdmsr \n"
@@ -648,6 +663,18 @@ __attribute__((naked)) void md_display_dump_hook() {
                 "jmp rax \n"
             );
             break;
+            case 1250:
+            case 1300:
+            __asm__ volatile (
+                "mov ecx, 0xC0000082 \n"
+                "rdmsr \n"
+                "shl rdx, 32 \n"
+                "or rax, rdx \n"
+                "sub rax, 0x1C0 \n"
+                "add rax, 0x16F7C3 \n" // jump back addr
+                "jmp rax \n"
+            );
+            break;
         default:
             break;
     }
@@ -666,7 +693,39 @@ int install_hooks() {
 
     uint64_t kernel_base = get_kernel_base();
 
+    /*
+      hook_trap_fatal_addr
+      AOB: 48 89 DF 4C 89 F6 E8 * * * * 66 66+6
+
+      00000000002DF75B 480F44C8                       cmove rcx, rax
+      00000000002DF75F 31C0                           xor eax, eax
+      00000000002DF761 E8CA82DDFF                     call 0x00000000000B7A30
+      00000000002DF766 4889DF                         mov rdi, rbx
+      00000000002DF769 4C89F6                         mov rsi, r14
+    ->00000000002DF76C E8BF864800                     call 0x0000000000767E30
+      00000000002DF771 6666666666662E0F1F840000000000 nop word ptr [rax+rax]
+      00000000002DF780 EBFE                           jmp 0x00000000002DF780
+      00000000002DF782 9090909090909090909090909090   nop:14
+      00000000002DF790 55                             push rbp
+      00000000002DF791 4889E5                         mov rbp, rsp
+    */
     uint64_t hook_trap_fatal_addr = 0;
+    /*
+      hook_md_display_dump_addr
+      AOB: 48 8D 15 * * * * 31 FF 31 F6 31 C0 E8 * * * * 48 8B 5D C8
+
+      0000000000315E9C 488D75C0       lea rsi, [rbp-0x40]
+      0000000000315EA0 E8FBB7F5FF     call 0x00000000002716A0
+      0000000000315EA5 85C0           test eax, eax
+      0000000000315EA7 0F8541FDFFFF   jne 0x0000000000315BEE
+      0000000000315EAD 488B4DC0       mov rcx, [rbp-0x40]
+    ->0000000000315EB1 488D15F8EE4C00 lea rdx, [rip+0x4CEEF8]
+      0000000000315EB8 31FF           xor edi, edi
+      0000000000315EBA 31F6           xor esi, esi
+      0000000000315EBC 31C0           xor eax, eax
+      0000000000315EBE E82D3B4500     call 0x00000000007699F0
+      0000000000315EC3 488B5DC8       mov rbx, [rbp-0x38]      
+    */
     uint64_t hook_md_display_dump_addr = 0;
 
     switch (cached_firmware) {
@@ -693,6 +752,14 @@ int install_hooks() {
         case 1202:
             hook_trap_fatal_addr = 0x14AAAC;
             hook_md_display_dump_addr = 0x16F771;
+            break;
+        case 1250:
+            hook_trap_fatal_addr = 0x14AADF;
+            hook_md_display_dump_addr = 0x16F7B1;
+            break;
+        case 1300:
+            hook_trap_fatal_addr = 0x14AAEC;
+            hook_md_display_dump_addr = 0x16F7B1;
             break;
         default:
             break;

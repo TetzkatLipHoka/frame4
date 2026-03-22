@@ -11,43 +11,36 @@ int streq(const char *s1, const char *s2) {
     return *s1 == *s2;
 }
 
+typedef struct {
+    unsigned short version;
+    uint64_t offset;
+} fw_entry_t;
+
 unsigned short kget_firmware_from_base(uint64_t kernbase) {
     if (cached_firmware) {
         return cached_firmware;
     }
 
-    char *firmwareString = "firmware";
-    
-    char *fw0505 = (char *)(kernbase + 0x7C7350);
-    char *fw0672 = (char *)(kernbase + 0x827FB9);
-    char *fw0702 = (char *)(kernbase + 0x827145);
-    char *fw0900 = (char *)(kernbase + 0x7E1127);
-    char *fw1100 = (char *)(kernbase + 0x8011AE);
-    char *fw1202 = (char *)(kernbase + 0x7EB33E);
+    const char *firmwareString = "firmware";
 
-    if (streq(fw0505, firmwareString)) {
-        cached_firmware = 505;
-        return 505;
-    }
-    else if (streq(fw0672, firmwareString)) {
-        cached_firmware = 672;
-        return 672;
-    }
-    else if (streq(fw0702, firmwareString)) {
-        cached_firmware = 702;
-        return 702;
-    }
-    else if (streq(fw0900, firmwareString)) {
-        cached_firmware = 900;
-        return 900;
-    }
-    else if (streq(fw1100, firmwareString)) {
-        cached_firmware = 1100;
-        return 1100;
-    }
-    else if (streq(fw1202, firmwareString)) {
-        cached_firmware = 1202;
-        return 1202;
+    static const fw_entry_t fw_table[] = {
+        { 505, 0x7C7350},
+        { 672, 0x827FB9},
+        { 702, 0x827145},
+        { 900, 0x7E1127},
+        {1100, 0x8011AE},
+        {1202, 0x7EB33E},
+        {1250, 0x7EB3FE},
+        {1300, 0x7EB57E}
+    };
+
+    for (int i = 0; i < sizeof(fw_table) / sizeof(fw_table[0]); i++) {
+        char *addr = (char *)(kernbase + fw_table[i].offset);
+
+        if (streq(addr, firmwareString)) {
+            cached_firmware = fw_table[i].version;
+            return fw_table[i].version;
+        }
     }
 
     return 0;
