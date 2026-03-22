@@ -97,24 +97,20 @@ int sys_proc_vm_map_handle(struct proc *p, struct sys_proc_vm_map_args *args) {
     vm_map_lock_read(map);
 
     if (!args->maps) {
-        args->num = map->nentries;
+        args->num = map->nentries + 1; // +1 to add a empty section for backwards compatibility
     }
     else {
-        if (vm_map_lookup_entry(map, NULL, &entry)) {
-            vm_map_unlock_read(map);
-            return 1;
-        }
+        entry = map->header.next;
 
-        for (int i = 0; i < args->num; i++) {
+        for (int i = 1; i < args->num && entry != &map->header; i++) { // i = 1 for backwards compatibility
             args->maps[i].start = entry->start;
             args->maps[i].end = entry->end;
             args->maps[i].offset = entry->offset;
             args->maps[i].prot = entry->prot & (entry->prot >> 8);
+
             memcpy(args->maps[i].name, entry->name, sizeof(args->maps[i].name));
-            
-            if (!(entry = entry->next)) {
-                break;
-            }
+
+            entry = entry->next;
         }
     }
 
