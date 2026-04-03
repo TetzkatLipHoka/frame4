@@ -1267,6 +1267,45 @@ void patch_kernel() {
     cpu_enable_wp();
 }
 
+/*
+  fwCheckPatch
+  AOB: 44 89 EB 44 8B 6D+0xA
+   
+  00000000003C5E99 85C0           test eax, eax
+  00000000003C5E9B 7856           js 0x00000000003C5EF3
+  00000000003C5E9D 4489EB         mov ebx, r13d
+  00000000003C5EA0 448B6DCC       mov r13d, [rbp-0x34]
+  00000000003C5EA4 4539E5         cmp r13d, r12d
+
+ -00000000003C5EA7 7375           jae 0x00000000003C5F1E
+ +00000000003C5EA7 EB75           jmp 0x00000000003C5F1E     
+
+  00000000003C5EA9 488D3DD030B700 lea rdi, [0xF38F80]
+  00000000003C5EB0 488D35DE30B700 lea rsi, [0xF38F95]
+  00000000003C5EB7 BA3B030000     mov edx, 0x33B
+  00000000003C5EBC 31C0           xor eax, eax
+  00000000003C5EBE E89D61A600     call 0x0000000000E2C060
+*/
+
+/*
+  disableCoreDumpPatch
+  AOB: 31 C0 8B 36+0xC
+
+  00000000002EFC0B 488945D0       mov [rbp-0x30], rax
+  00000000002EFC0F 31C0           xor eax, eax
+  00000000002EFC11 8B36           mov esi, [rsi]
+  00000000002EFC13 418B5504       mov edx, [r13+4]
+  00000000002EFC17 418B4D08       mov ecx, [r13+8]
+
+ -00000000002EFC1B E840C4B300     call 0x0000000000E2C060
+ +00000000002EFC1B 41C6450C00     mov byte ptr [r13 + 0x0C], 0
+
+  00000000002EFC20 488D0599721201 lea rax, [0x1416EC0]
+  00000000002EFC27 803800         cmp byte ptr [rax], 0
+  00000000002EFC2A 7428           je 0x00000000002EFC54
+  00000000002EFC2C 488D3DB9FAC100 lea rdi, [0xF0F6EC]
+  00000000002EFC33 488D350AFBC100 lea rsi, [0xF0F744]
+*/
 int patch_shellcore() {
     struct proc *p = proc_find_by_name("SceShellCore");
     if (!p) {
@@ -1355,16 +1394,14 @@ int patch_shellcore() {
             fwCheckPatch = 0x3CA567;
             disableCoreDumpPatch = 0x2F126B;
             break;
-/* // Missing Offset
         case 1250:
-            fwCheckPatch = 0x0;
-            disableCoreDumpPatch = 0x0;
+            fwCheckPatch = 0x3CA3A7;
+            disableCoreDumpPatch = 0x2F123B;
             break;
         case 1300:
-            fwCheckPatch = 0x0;
-            disableCoreDumpPatch = 0x0;
-            break;            
-*/            
+            fwCheckPatch = 0x3CA3A7;
+            disableCoreDumpPatch = 0x2F123B;
+            break;                 
         default:
             break;
     }

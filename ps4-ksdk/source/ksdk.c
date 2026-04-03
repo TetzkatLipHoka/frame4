@@ -52,9 +52,8 @@ void init_ksdk() {
         case 900:
         case 1100:
         case 1202:
-// Missing Offset
-//        case 1250:
-//        case 1300:
+        case 1250:
+        case 1300:
             break;
         default:
             return;
@@ -1079,9 +1078,17 @@ void init_ksdk() {
     pmap_unmapdev = (void *)(cached_kernel_base + uiOffset);
 
     /*
-      Module: ?
-      AOB:
-
+      AOB: 8A 83 08 02 00 00+0x6
+      00000000000A044F C7057307AB0101000000 mov dword ptr [0x1B50BCC], 1
+      00000000000A0459 803D8907AB010B       cmp byte ptr [0x1B50BE9], 0xB
+      00000000000A0460 750A                 jne 0x00000000000A046C
+      00000000000A0462 C7056007AB0101000000 mov dword ptr [0x1B50BCC], 1
+      00000000000A046C 8A8308020000         mov al, [rbx+0x208]
+     >00000000000A0472 8805E8BA4801         mov [0x152BF60], al
+      00000000000A0478 4883C408             add rsp, 8
+      00000000000A047C 5B                   pop rbx
+      00000000000A047D 5D                   pop rbp
+      00000000000A047E C3                   ret
     */
     uiOffset = 0;
     switch (firmwareVersion) {
@@ -1100,21 +1107,27 @@ void init_ksdk() {
         case 1100:
             uiOffset = 0x152CFF8;
             break;
-        case 1202:
+        case 1202:  
+        case 1250:
+        case 1300:
             uiOffset = 0x1A47F40;
-            break;    
-        case 1250: // Missing Offset
-            uiOffset = 0x0;
-            break;
-        case 1300: // Missing Offset
-            uiOffset = 0x0;
             break;
     }  
     disable_console_output = (void *)(cached_kernel_base + uiOffset);
 
     /*
-      AOB:
-
+      AOB: 4D 89 AF 98 03 00 00 48 8D+0x7
+      00000000000013F7 89C3           mov ebx, eax
+      00000000000013F9 85C0           test eax, eax
+      00000000000013FB 7509           jne 0x0000000000001406
+      00000000000013FD 31DB           xor ebx, ebx
+      00000000000013FF 4D89AF98030000 mov [r15+0x398], r13
+     >0000000000001406 488D35D30D5601 lea rsi, [0x15621E0]
+      000000000000140D 4889CF         mov rdi, rcx
+      0000000000001410 E8CB083000     call 0x0000000000301CE0
+      0000000000001415 89D8           mov eax, ebx
+      0000000000001417 4883C408       add rsp, 8
+      000000000000141B 5B             pop rbx
     */
     uiOffset = 0;
     switch (firmwareVersion) {
@@ -1134,20 +1147,26 @@ void init_ksdk() {
             uiOffset = 0x15415B0;
             break;
         case 1202:
+        case 1250:
+        case 1300: 
             uiOffset = 0x1520D00;
-            break;    
-        case 1250: // Missing Offset
-            uiOffset = 0x0;
-            break;
-        case 1300: // Missing Offset
-            uiOffset = 0x0;
             break;
     }  
     M_TEMP = (void *)(cached_kernel_base + uiOffset);
 
     /*
-      AOB:
-
+      AOB: 41 09 CC 48 8D 0D+0x3
+      000000000007D405 81E200000100    and edx, 0x10000
+      000000000007D40B 895DA4          mov [rbp-0x5C], ebx
+      000000000007D40E 4183E410        and r12d, 0x10
+      000000000007D412 4109DC          or r12d, ebx
+      000000000007D415 4109CC          or r12d, ecx
+     >000000000007D418 488D0D29B91E02  lea rcx, [0x2268D48]
+      000000000007D41F 4109C4          or r12d, eax
+      000000000007D422 4109D4          or r12d, edx
+      000000000007D425 4C3931          cmp [rcx], r14
+      000000000007D428 7520            jne 0x000000000007D44A
+      000000000007D42A 488D056FA14B01  lea rax, [0x15375A0]
     */
     uiOffset = 0;
     switch (firmwareVersion) {
@@ -1166,21 +1185,27 @@ void init_ksdk() {
         case 1100:
             uiOffset = 0x21FF130;
             break;
-        case 1202:
-            uiOffset = 0x22D1D50;
-            break;    
+        case 1202:   
         case 1250:
-            uiOffset = 0x0; // Missing Offset
-            break;
         case 1300:
-            uiOffset = 0x0; // Missing Offset
+            uiOffset = 0x22D1D50;
             break;
     }  
     kernel_map = (void *)(cached_kernel_base + uiOffset);
 
     /*
-      AOB:
-
+      AOB: 44 0F 38 F1 63 24+C
+      000000000029AE7C 488D05CD2F2B01 lea rax, [0x154DE50]
+      000000000029AE83 BE20060000     mov esi, 0x620
+      000000000029AE88 C7432000000001 mov dword ptr [rbx+0x20], 0x1000000
+      000000000029AE8F 440F38F16324   movbe [rbx+0x24], r12d
+      000000000029AE95 4C0F38F17B28   movbe [rbx+0x28], r15
+     >000000000029AE9B 480335CE49E800 add rsi, [0x111F870]
+      000000000029AEA2 488D7B3C       lea rdi, [rbx+0x3C]
+      000000000029AEA6 BA40000000     mov edx, 0x40
+      000000000029AEAB 488B00         mov rax, [rax]
+      000000000029AEAE 480F38F14330   movbe [rbx+0x30], rax
+      000000000029AEB4 440F38F17338   movbe [rbx+0x38], r14d   
     */
     uiOffset = 0;
     switch (firmwareVersion) {
@@ -1199,21 +1224,27 @@ void init_ksdk() {
         case 1100:
             uiOffset = 0x111F830;
             break;
-        case 1202:
-            uiOffset = 0x111FA18;
-            break;    
+        case 1202:   
         case 1250:
-            uiOffset = 0x0; // Missing Offset
-            break;
         case 1300:
-            uiOffset = 0x0; // Missing Offset
+            uiOffset = 0x111FA18;
             break;
     }  
     prison0 = (void *)(cached_kernel_base + uiOffset);
 
     /*
-      AOB:
-
+      AOB: 48 8B 7D A8 48 3B 3B-0x7
+      000000000004CAAE 488B7048       mov rsi, [rax+0x48]
+      000000000004CAB2 4885F6         test rsi, rsi
+      000000000004CAB5 7409           je 0x000000000004CAC0
+      000000000004CAB7 488B7DA8       mov rdi, [rbp-0x58]
+      000000000004CABB E8E01D4100     call 0x000000000045E8A0
+      000000000004CAC0 488D1D59341A02 lea rbx, [0x21EFF20]
+      000000000004CAC7 488B7DA8       mov rdi, [rbp-0x58]
+      000000000004CACB 483B3B         cmp rdi, [rbx]
+      000000000004CACE 7510           jne 0x000000000004CAE0
+      000000000004CAD0 E8BB911E00     call 0x0000000000235C90
+      000000000004CAD5 488B7DA8       mov rdi, [rbp-0x58]
     */
     uiOffset = 0;
     switch (firmwareVersion) {
@@ -1232,21 +1263,27 @@ void init_ksdk() {
         case 1100:
             uiOffset = 0x2116640;
             break;
-        case 1202:
-            uiOffset = 0x2136E90;
-            break;    
+        case 1202:  
         case 1250:
-            uiOffset = 0x0; // Missing Offset
-            break;
         case 1300:
-            uiOffset = 0x0; // Missing Offset
+            uiOffset = 0x2136E90;
             break;
     }  
     rootvnode = (void *)(cached_kernel_base + uiOffset);
 
     /*
-      AOB:
-
+      AOB: B9 48 06 00 00 31 C0+0x12
+      0000000000027251 B948060000     mov ecx, 0x648
+      0000000000027256 31C0           xor eax, eax
+      0000000000027258 31F6           xor esi, esi
+      000000000002725A 488945D0       mov [rbp-0x30], rax
+      000000000002725E E8CD714100     call 0x000000000043E430
+     >0000000000027263 488D0576D4B601 lea rax, [0x1B946E0]
+      000000000002726A 488B18         mov rbx, [rax]
+      000000000002726D 4885DB         test rbx, rbx
+      0000000000027270 0F84BF000000   je 0x0000000000027335
+      0000000000027276 4C8D2574C57400 lea r12, [0x7737F1]
+      000000000002727D 31C0           xor eax, eax
     */
     uiOffset = 0;
     switch (firmwareVersion) {
@@ -1265,21 +1302,27 @@ void init_ksdk() {
         case 1100:
             uiOffset = 0x22D0A98;
             break;
-        case 1202:
-            uiOffset = 0x1B28538;
-            break;    
+        case 1202:    
         case 1250:
-            uiOffset = 0x0; // Missing Offset
-            break;
         case 1300:
-            uiOffset = 0x0; // Missing Offset
+            uiOffset = 0x1B28538;
             break;
     }  
     allproc = (void *)(cached_kernel_base + uiOffset);
 
     /*
-      AOB:
-
+      AOB: B9 21 00 00 00 45 31 FF-0xF
+      00000000006264C2 E8B94FFFFF     call 0x000000000061B480
+      00000000006264C7 85C0           test eax, eax
+      00000000006264C9 757C           jne 0x0000000000626547
+      00000000006264CB 4C8D2D7E03BF01 lea r13, [0x2216850]
+      00000000006264D2 48035DC8       add rbx, [rbp-0x38]
+     >00000000006264D6 488D15339EAD00 lea rdx, [0x1100310]
+      00000000006264DD 488D7DC8       lea rdi, [rbp-0x38]
+      00000000006264E1 4C8D4DC0       lea r9, [rbp-0x40]
+      00000000006264E5 B921000000     mov ecx, 0x21
+      00000000006264EA 4531FF         xor r15d, r15d
+      00000000006264ED 4531C0         xor r8d, r8d
     */
     uiOffset = 0;
     switch (firmwareVersion) {
@@ -1298,14 +1341,10 @@ void init_ksdk() {
         case 1100:
             uiOffset = 0x1101760;
             break;
-        case 1202:
-            uiOffset = 0x1102B70;
-            break;    
+        case 1202:  
         case 1250:
-            uiOffset = 0x0; // Missing Offset
-            break;
         case 1300:
-            uiOffset = 0x0; // Missing Offset
+            uiOffset = 0x1102B70;
             break;
     }  
     sysents = (void *)(cached_kernel_base + uiOffset);

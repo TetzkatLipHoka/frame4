@@ -213,6 +213,111 @@ int proc_mprotect(struct proc *p, void *address, uint64_t size, int new_prot) {
     return r;
 }
 
+/*
+  libkernel: _scePthreadAttrInit
+  0000000000013656 90909090909090909090 nop:10
+ >0000000000013660 55                   push rbp
+  0000000000013661 4889E5               mov rbp, rsp
+  0000000000013664 E89705FFFF           call 0x0000000000003C00
+  0000000000013669 8D8800000280         lea ecx, [rax-0x7FFE0000]
+  000000000001366F 85C0                 test eax, eax
+  0000000000013671 0F45C1               cmovne eax, ecx
+  0000000000013674 5D                   pop rbp
+  0000000000013675 C3                   ret      
+
+  Reference:
+    AOB: 85 C0 BB 02 00 18-05
+    0000000000012906 48893DCBEB0400 mov [0x614D8], rdi
+    000000000001290D 488D3DD4EB0400 lea rdi, [0x614E8]
+    0000000000012914 488915C5EB0400 mov [0x614E0], rdx
+    000000000001291B E800810000     call 0x000000000001AA20
+    0000000000012920 488D7DC8       lea rdi, [rbp-0x38]
+    
+   >0000000000012924 E8370D0000     call 0x0000000000013660
+   
+    0000000000012929 85C0           test eax, eax
+    000000000001292B BB02001881     mov ebx, 0x81180002
+    0000000000012930 759B           jne 0x00000000000128CD
+    0000000000012932 BF0B000000     mov edi, 0xB
+    0000000000012937 31F6           xor esi, esi
+*/
+
+/*
+  libkernel: _scePthreadAttrSetstacksize
+  DIRECTLY BELOW: _scePthreadAttrInit
+   
+  0000000000013676 90909090909090909090 nop:10
+ >0000000000013680 55                   push rbp
+  0000000000013681 4889E5               mov rbp, rsp
+  0000000000013684 E88707FFFF           call 0x0000000000003E10
+  0000000000013689 8D8800000280         lea ecx, [rax-0x7FFE0000]
+  000000000001368F 85C0                 test eax, eax
+  0000000000013691 0F45C1               cmovne eax, ecx
+  0000000000013694 5D                   pop rbp
+  0000000000013695 C3                   ret
+  
+  Reference (from libkernel_web)
+    AOB: 48 8D 7D C0 E8 * * * * 81-05
+    00000000000013F1 4C89FF         mov rdi, r15
+    00000000000013F4 BE04000000     mov esi, 4
+    00000000000013F9 E8B2FB0100     call 0x0000000000020FB0
+    00000000000013FE 4C89FF         mov rdi, r15
+    0000000000001401 4C89F6         mov rsi, r14
+   >0000000000001404 E877910100     call 0x000000000001A580
+    0000000000001409 488D7DC0       lea rdi, [rbp-0x40]
+    000000000000140D E82E670200     call 0x0000000000027B40
+    0000000000001412 817DC000000002 cmp dword ptr [rbp-0x40], 0x2000000
+    0000000000001419 488D0D20F10200 lea rcx, [0x30540]
+    0000000000001420 488D15A9F00200 lea rdx, [0x304D0]
+*/
+
+/*
+  libkernel: _scePthreadCreate
+  0000000000013A96 90909090909090909090 nop:10
+ >0000000000013AA0 55                   push rbp
+  0000000000013AA1 4889E5               mov rbp, rsp
+  0000000000013AA4 E8B733FFFF           call 0x0000000000006E60
+  0000000000013AA9 8D8800000280         lea ecx, [rax-0x7FFE0000]
+  0000000000013AAF 85C0                 test eax, eax
+  0000000000013AB1 0F45C1               cmovne eax, ecx
+  0000000000013AB4 5D                   pop rbp
+  0000000000013AB5 C3                   ret
+
+  Reference:
+    AOB: E8 * * * * 4C 89 FF 89 
+   
+    0000000000012992 4C89FE     mov rsi, r15
+    0000000000012995 480F42D1   cmovb rdx, rcx
+    0000000000012999 85C0       test eax, eax
+    000000000001299B 480F45D1   cmovne rdx, rcx
+    000000000001299F 31C9       xor ecx, ecx
+
+   >00000000000129A1 E8FA100000 call 0x0000000000013AA0
+
+    00000000000129A6 4C89FF     mov rdi, r15
+    00000000000129A9 89C3       mov ebx, eax
+    00000000000129AB E8F00B0000 call 0x00000000000135A0
+    00000000000129B0 85DB       test ebx, ebx
+    00000000000129B2 745A       je 0x0000000000012A0E
+*/
+
+/*
+  libkernel: _thr_initial      
+  Reference
+    AOB: 48 8D 15 * * * * 48 83 3A 00
+    
+    0000000000002C7B 4885C0         test rax, rax
+    0000000000002C7E 7405           je 0x0000000000002C85
+    0000000000002C80 4889E9         mov rcx, rbp
+    0000000000002C83 EB02           jmp 0x0000000000002C87
+    0000000000002C85 31C9           xor ecx, ecx
+   >0000000000002C87 488D15A2B70800 lea rdx, [0x8E430]
+    0000000000002C8E 48833A00       cmp qword ptr [rdx], 0
+    0000000000002C92 743C           je 0x0000000000002CD0
+    0000000000002C94 488D70FF       lea rsi, [rax-1]
+    0000000000002C98 4839CE         cmp rsi, rcx
+    0000000000002C9B 730C           jae 0x0000000000002CA9
+*/
 int proc_create_thread(struct proc *p, uint64_t address) {
     void *rpcldraddr = NULL;
     void *stackaddr = NULL;
@@ -287,8 +392,8 @@ int proc_create_thread(struct proc *p, uint64_t address) {
                     break;
                 case 1100:
                 case 1202:
-//                case 1250: // Missing Offset
-//                case 1300:
+                case 1250:
+                case 1300:
                     _scePthreadAttrInit = entries[i].start + 0x134A0;
                     _scePthreadAttrSetstacksize = entries[i].start + 0x134C0;
                     _scePthreadCreate = entries[i].start + 0x138E0;
@@ -335,20 +440,18 @@ int proc_create_thread(struct proc *p, uint64_t address) {
                     _scePthreadCreate = entries[i].start + 0x9700;
                     _thr_initial = entries[i].start + 0x8E430;
                     break;
-/* // Missing Offset
                 case 1250:
-                    _scePthreadAttrInit = entries[i].start + 0x0;
-                    _scePthreadAttrSetstacksize = entries[i].start + 0x0;
-                    _scePthreadCreate = entries[i].start + 0x0;
-                    _thr_initial = entries[i].start + 0x0;
+                    _scePthreadAttrInit = entries[i].start + 0x69D0;
+                    _scePthreadAttrSetstacksize = entries[i].start + 0x6E20;
+                    _scePthreadCreate = entries[i].start + 0x9710;
+                    _thr_initial = entries[i].start + 0x8E430;
                     break;
                 case 1300:
-                    _scePthreadAttrInit = entries[i].start + 0x0;
-                    _scePthreadAttrSetstacksize = entries[i].start + 0x0;
-                    _scePthreadCreate = entries[i].start + 0x0;
-                    _thr_initial = entries[i].start + 0x0;
-                    break;                    
-*/
+                    _scePthreadAttrInit = entries[i].start + 0xFEC0;
+                    _scePthreadAttrSetstacksize = entries[i].start + 0x15F40;
+                    _scePthreadCreate = entries[i].start + 0x29F30;
+                    _thr_initial = entries[i].start + 0x8E430;
+                    break;
             }
             break;
         }
@@ -380,11 +483,11 @@ int proc_create_thread(struct proc *p, uint64_t address) {
                     break;
                 case 1100:
                 case 1202:
-//                case 1250: // Missing Offset
-//                case 1300:
+                case 1250:
+                case 1300:
                     _scePthreadAttrInit = entries[i].start + 0x14010;
-                    _scePthreadAttrSetstacksize = entries[i].start + 0x14030;
-                    _scePthreadCreate = entries[i].start + 0x14450;
+                    _scePthreadAttrSetstacksize = entries[i].start + 0x14030; 
+                    _scePthreadCreate = entries[i].start + 0x14450; 
                     _thr_initial = entries[i].start + 0x8E830;
                     break;
             }
