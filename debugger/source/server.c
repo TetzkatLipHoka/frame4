@@ -115,6 +115,21 @@ int handle_version(int fd, struct cmd_packet *packet) {
     return 0;
 }
 
+int handle_fw_version(int fd, struct cmd_packet *packet) {
+    /* sdk_version from sysctl is 0xMMmmRRRR (e.g., 0x05050000 for 5.05).
+     * Convert to ps4debug format: major*100 + minor (e.g., 505). */
+    int sdk_version = 0;
+    size_t len = 4;
+    sysctlbyname("kern.sdk_version", &sdk_version, &len, NULL, 0);
+
+    uint8_t major = (sdk_version >> 24) & 0xFF;
+    uint8_t minor = (sdk_version >> 16) & 0xFF;
+    int16_t fw = (major * 100) + minor;
+
+    net_send_data(fd, &fw, sizeof(int16_t));
+    return 0;
+}
+
 // tested it again (0.2.6) and could not find any issue
 int unload_handle(int fd, struct cmd_packet *packet) {
     unload_cmd_sent = true;
@@ -140,6 +155,9 @@ int cmd_handler(int fd, struct cmd_packet *packet) {
 
     if (packet->cmd == CMD_VERSION) {
         return handle_version(fd, packet);
+    }
+    if (packet->cmd == CMD_FW_VERSION) {
+        return handle_fw_version(fd, packet);
     }
     if (packet->cmd == CMD_UNLOAD) {
         return unload_handle(fd, packet);

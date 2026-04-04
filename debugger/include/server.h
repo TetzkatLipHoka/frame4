@@ -40,6 +40,7 @@ struct uart_server_client *alloc_uart_client();
 void free_uart_client(struct uart_server_client *svc);
 
 int handle_version(int fd, struct cmd_packet *packet);
+int handle_fw_version(int fd, struct cmd_packet *packet);
 int cmd_handler(int fd, struct cmd_packet *packet);
 int check_debug_interrupt();
 int handle_socket_client(struct server_client *svc);

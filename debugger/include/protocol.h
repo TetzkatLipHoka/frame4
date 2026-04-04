@@ -9,6 +9,7 @@
 #define PACKET_MAGIC                0xFFAABBCC
 
 #define CMD_VERSION                 0xBD000001
+#define CMD_FW_VERSION              0xBD000500
 #define CMD_UNLOAD                  0xBD0000FF
 
 #define CMD_PROC_LIST               0xBDAA0001
