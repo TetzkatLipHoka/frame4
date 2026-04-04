@@ -1,5 +1,6 @@
 #include "proc.h"
 #include "search.h"
+#include "console_scan.h"
 
 int proc_list_handle(int fd, struct cmd_packet *packet) {
     void *data;
@@ -1484,6 +1485,15 @@ int proc_handle(int fd, struct cmd_packet *packet) {
         return proc_prx_list_handle(fd, packet);
     case CMD_PROC_AOB:
         return proc_aob_handle(fd, packet);
+    case CMD_CONSOLE_SCAN_START:
+        return console_scan_start_handle(fd, packet);
+    case CMD_CONSOLE_SCAN_RESCAN:
+        return console_scan_rescan_handle(fd, packet);
+    case CMD_CONSOLE_SCAN_GETRES:
+        return console_scan_get_results_handle(fd, packet);
+    case CMD_CONSOLE_SCAN_DISC:
+        net_send_status(fd, CMD_SUCCESS);
+        return 0;
     }
 
     return 1;

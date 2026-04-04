@@ -33,16 +33,44 @@ int _main(void) {
     mkdir("/data/scan_temp/cur", 0777);
     mkdir("/data/scan_temp/old", 0777);
 
+    // reconnect loop — survives rest mode
+    int retry_count = 0;
+
+    while (true) {
+        if (!rest_network_is_up()) {
+            if (retry_count == 0) {
+                sceSysUtilSendSystemNotificationWithText(222, "Frame4: network down, waiting...");
+            }
+            retry_count++;
+            sceKernelSleep(retry_count <= REST_SHORT_RETRY_MAX ? REST_SHORT_SLEEP_SEC : REST_LONG_SLEEP_SEC);
+            continue;
+        }
+
+        // network is up — (re)launch all servers
+        retry_count = 0;
+        rest_mode_triggered = false;
+
+        snprintf(notifyBuffer, sizeof(notifyBuffer), "Frame4 " PACKET_VERSION " server started");
+        sceSysUtilSendSystemNotificationWithText(222, notifyBuffer);
+
     // start the http server
-    ScePthread socketServerThread;
-    scePthreadCreate(&socketServerThread, NULL, (void *)start_http, NULL, "http_server_thread");
+        ScePthread httpThread;
+        scePthreadCreate(&httpThread, NULL, (void *)start_http, NULL, "http_server_thread");
 
     // start the uart socket
-    ScePthread uartServerThread;
-    scePthreadCreate(&uartServerThread, NULL, (void*)start_uart_server, NULL, "uart_server_thread");
+        ScePthread uartThread;
+        scePthreadCreate(&uartThread, NULL, (void *)start_uart_server, NULL, "uart_server_thread");
 
-    // start the socket server - this will block
+        // start the socket server - blocks until unload or rest mode
     start_server();
+
+        if (!rest_mode_triggered)
+            break; // normal unload, exit for real
+
+        // rest mode: wait for threads to finish, then loop back
+        uprintf("rest mode: waiting for network to return...");
+        sceKernelSleep(REST_SHORT_SLEEP_SEC);
+    }
 
     return 0;
 }

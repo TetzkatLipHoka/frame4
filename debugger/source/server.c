@@ -2,7 +2,9 @@
 #include "server.h"
 
 bool unload_cmd_sent = false;
+bool rest_mode_triggered = false;
 int broadcastServerSocketId = 0;
+int serverSocketId = 0;
 int logDevice = 0; // uart server
 
 struct server_client servclients[SERVER_MAXCLIENTS];
@@ -46,6 +48,64 @@ void free_uart_client(struct uart_server_client *svc) {
     sceNetSocketClose(svc->fd);
 
     memset(svc, NULL, sizeof(struct uart_server_client));
+}
+
+/* ========================================================================
+ * Rest mode support
+ * ======================================================================== */
+
+int rest_network_is_up(void) {
+    SceNetCtlInfo info;
+
+    if (sceNetCtlInit() < 0)
+        return 0;
+
+    memset(&info, 0, sizeof(info));
+    int ret = sceNetCtlGetInfo(14, &info); /* 14 = IP address */
+    sceNetCtlTerm();
+
+    if (ret < 0)
+        return 0;
+
+    /* IP valid if strlen > 4 (e.g. "0.0" = 3 chars is not valid) */
+    return (strlen(info.ip_address) > 4) ? 1 : 0;
+}
+
+static int is_rest_mode_errno(void) {
+    return (errno == ECONNABORTED || errno == REST_ECONNABORTED_PS4);
+}
+
+static int is_socket_dead(void) {
+    return (errno == EBADF || errno == ECONNRESET || errno == ESHUTDOWN);
+}
+
+void rest_teardown_servers(void) {
+    /* Close all debug clients */
+    for (int i = 0; i < SERVER_MAXCLIENTS; i++) {
+        if (servclients[i].id != 0) {
+            free_client(&servclients[i]);
+        }
+    }
+
+    /* Close all uart clients */
+    for (int i = 0; i < UART_SERVER_MAXCLIENTS; i++) {
+        if (uartservclients[i].id != 0) {
+            free_uart_client(&uartservclients[i]);
+        }
+    }
+
+    /* Close server socket */
+    if (serverSocketId > 0) {
+        sceNetSocketClose(serverSocketId);
+        serverSocketId = 0;
+    }
+
+    /* Abort broadcast socket to unblock recvfrom */
+    if (broadcastServerSocketId > 0) {
+        sceNetSocketAbort(broadcastServerSocketId, 3);
+        sceNetSocketClose(broadcastServerSocketId);
+        broadcastServerSocketId = 0;
+    }
 }
 
 int handle_version(int fd, struct cmd_packet *packet) {
@@ -282,8 +342,8 @@ int handle_socket_client(struct server_client *svc) {
                 goto error;
             }
 
-            // check if disconnected
-            if (errno == ECONNRESET) {
+            // check if disconnected or socket killed by rest mode
+            if (is_socket_dead()) {
                 goto error;
             }
         }
@@ -296,8 +356,8 @@ int handle_socket_client(struct server_client *svc) {
                 }
             }
 
-            // check if disconnected
-            if (errno == ECONNRESET) {
+            // check if disconnected or socket killed by rest mode
+            if (is_socket_dead()) {
                 goto error;
             }
 
@@ -393,6 +453,11 @@ void configure_socket(int fd) {
 
     bufsize = 0x100000;
     sceNetSetsockopt(fd, SOL_SOCKET, SO_RCVBUF, (char *)&bufsize, sizeof(bufsize));
+
+    /* Send/receive timeouts — prevents indefinite blocking during rest mode */
+    int timeout = 0x10001; /* ~1 second */
+    sceNetSetsockopt(fd, SOL_SOCKET, 0x1005, (char *)&timeout, sizeof(timeout)); /* SO_SNDTIMEO */
+    sceNetSetsockopt(fd, SOL_SOCKET, 0x1006, (char *)&timeout, sizeof(timeout)); /* SO_RCVTIMEO */
 }
 
 void *broadcast_thread(void *arg) {
@@ -447,7 +512,11 @@ void *broadcast_thread(void *arg) {
             }
         }
         else {
-            uprintf("sceNetRecvfrom failed");
+            // socket was aborted (rest mode teardown) — exit cleanly
+            if (is_rest_mode_errno() || is_socket_dead()) {
+                uprintf("broadcast thread: socket aborted, exiting");
+                break;
+            }
         }
 
         sceKernelSleep(1);
@@ -482,6 +551,7 @@ int start_server() {
         return 1;
     }
 
+    serverSocketId = serv;
     configure_socket(serv);
 
     r = sceNetBind(serv, (struct sockaddr *)&server, sizeof(server));
@@ -515,6 +585,15 @@ int start_server() {
 
         errno = NULL;
         fd = sceNetAccept(serv, (struct sockaddr *)&client, &len);
+
+        // rest mode: kernel aborts all sockets
+        if (fd < 0 && is_rest_mode_errno()) {
+            uprintf("rest mode detected (errno %i), tearing down", errno);
+            rest_mode_triggered = true;
+            rest_teardown_servers();
+            return 0;
+        }
+
         if (fd > -1 && !errno) {
             uprintf("accepted a new client");
 
@@ -898,10 +977,14 @@ int start_http() {
     }
 
     while (true) {
-        if (unload_cmd_sent) {
+        if (unload_cmd_sent || rest_mode_triggered) {
             break;
         }
+        errno = NULL;
         clientSocket = sceNetAccept(server, (struct sockaddr*)&clientAddress, &clientAddressLength);
+        if (clientSocket < 0 && is_rest_mode_errno()) {
+            break;
+        }
         if (clientSocket > -1) {
             handle_web_client(clientSocket);
             sceNetSocketClose(clientSocket);
@@ -980,13 +1063,18 @@ int start_uart_server() {
     memset(uartservclients, NULL, sizeof(struct uart_server_client) * UART_SERVER_MAXCLIENTS);
 
     while (true) {
-        if (unload_cmd_sent) {
+        if (unload_cmd_sent || rest_mode_triggered) {
             break;
         }
         scePthreadYield();
 
         errno = NULL;
         fd = sceNetAccept(serv, (struct sockaddr *)&client, &len);
+
+        if (fd < 0 && is_rest_mode_errno()) {
+            break;
+        }
+
         if (fd > -1 && !errno) {
             uprintf("<TTYRedirector> accepted a new uart client");
 

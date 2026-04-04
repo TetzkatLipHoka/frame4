@@ -19,6 +19,17 @@
 #define BROADCAST_SERVER_PORT   2813
 #define BROADCAST_MAGIC         0xFFFFAAAA
 
+/* Rest mode support */
+#define REST_ECONNABORTED_PS4   163     /* PS4 kernel rest mode errno */
+#define REST_SHORT_RETRY_MAX    99      /* short-sleep retry count before backoff */
+#define REST_SHORT_SLEEP_SEC    2       /* sleep between retries while polling */
+#define REST_LONG_SLEEP_SEC     1000    /* sleep after many failed retries */
+
+extern bool rest_mode_triggered;
+
+int  rest_network_is_up(void);
+void rest_teardown_servers(void);
+
 extern struct server_client servclients[SERVER_MAXCLIENTS];
 extern struct uart_server_client uartservclients[UART_SERVER_MAXCLIENTS];
 

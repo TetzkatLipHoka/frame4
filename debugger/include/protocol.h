@@ -5,7 +5,7 @@
 #include "errno.h"
 #include "kdbg.h"
 
-#define PACKET_VERSION              "0.4.6"
+#define PACKET_VERSION              "0.4.7"
 #define PACKET_MAGIC                0xFFAABBCC
 
 #define CMD_VERSION                 0xBD000001
@@ -29,6 +29,11 @@
 #define CMD_PROC_PRX_UNLOAD         0xBDAA0010
 #define CMD_PROC_PRX_LIST           0xBDAA0011
 #define CMD_PROC_AOB                0xBDAA0012
+
+#define CMD_CONSOLE_SCAN_START      0xBDAACC01
+#define CMD_CONSOLE_SCAN_RESCAN     0xBDAACC02
+#define CMD_CONSOLE_SCAN_GETRES     0xBDAACC03
+#define CMD_CONSOLE_SCAN_DISC       0xBDAACC06
 
 #define SCAN_MAX_LENGTH             0x80000 // 512KB
 #define PROC_AOB_SCAN_BUFFER_LEN    0x80000 // 512KB
