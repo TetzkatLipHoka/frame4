@@ -1,17 +1,8 @@
 /*
- * console_scan.h — Stateless console scan system (from ps4debug v1.1.19)
- *
- * Adds these commands alongside the existing Frame4 scanner:
- *
  *   CMD_CONSOLE_SCAN_START  (0xBDAACC01) — Full-featured scan, streams offset+value
  *   CMD_CONSOLE_SCAN_RESCAN (0xBDAACC02) — Rescan/narrow previous results
  *   CMD_CONSOLE_SCAN_GETRES (0xBDAACC03) — Read values at matched addresses
  *   CMD_CONSOLE_SCAN_DISC   (0xBDAACC06) — Disconnect ack
- *
- * The existing CMD_PROC_SCAN (0xBDAA0009) and its file-based result handlers
- * (0xBDAA000D, 0xBDAA000E) remain unchanged for backward compatibility.
- *
- * All scan code is stateless — no globals, no file I/O, thread-safe.
  */
 
 #ifndef _CONSOLE_SCAN_H
