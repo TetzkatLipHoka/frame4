@@ -1,12 +1,3 @@
-/*
- * console_scan.c — Stateless console scan handlers for Frame4
- *
- * Ported from ps4debug v1.1.19. Adapted to use Frame4's APIs:
- *   net_send_data / net_recv_data / net_send_status
- *   sys_proc_rw / sys_proc_cmd (SYS_PROC_VM_MAP)
- *   pfmalloc / free
- */
-
 #include "console_scan.h"
 
 /* ========================================================================
