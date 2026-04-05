@@ -642,6 +642,8 @@ void debug_cleanup(struct debug_context *dbgctx) {
 
     // disable all breakpoints
     for (int i = 0; i < MAX_BREAKPOINTS; i++) {
+        if (dbgctx->breakpoints[i].address == 0)
+            continue;
         sys_proc_rw(dbgctx->pid, dbgctx->breakpoints[i].address, &dbgctx->breakpoints[i].original, 1, 1);
     }
 
